@@ -1064,19 +1064,25 @@ defmodule Swarm.Tracker do
                 "request to update meta from #{inspect(pid)} (#{inspect(new_meta)} has equal clocks, ignoring..."
               )
             :concurrent ->
-              new_meta = Map.merge(old_meta, new_meta)
+              if (old_meta != new_meta) do
+                new_meta = Map.merge(old_meta, new_meta)
 
-              # we're going to join and bump our local clock though and re-broadcast the update to ensure we converge
-              debug(
-                "conflicting meta for #{inspect(name)}, updating and notifying other nodes, old meta: #{
-                  inspect(old_meta)
-                }, new meta: #{inspect(new_meta)}, rclock: #{inspect(rclock)}) lclock: #{inspect(lclock)}"
-              )
+                # we're going to join and bump our local clock though and re-broadcast the update to ensure we converge
+                debug(
+                  "conflicting meta for #{inspect(name)}, updating and notifying other nodes, old meta: #{
+                    inspect(old_meta)
+                  }, new meta: #{inspect(new_meta)}, rclock: #{inspect(rclock)}) lclock: #{inspect(lclock)}"
+                )
 
-              lclock = Clock.join(lclock, rclock)
-              lclock = Clock.event(lclock)
-              Registry.update(name, meta: new_meta, clock: lclock)
-              broadcast_event(state.nodes, lclock, {:update_meta, new_meta, pid})
+                lclock = Clock.join(lclock, rclock)
+                lclock = Clock.event(lclock)
+                Registry.update(name, meta: new_meta, clock: lclock)
+                broadcast_event(state.nodes, lclock, {:update_meta, new_meta, pid})
+              else
+                debug(
+                  "request to update meta from #{inspect(pid)} (#{inspect(new_meta)}. Concurrent but old and new meta are exactly the same. ignoring..."
+                )
+              end
           end
         end)
 
