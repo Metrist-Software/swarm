@@ -1045,22 +1045,25 @@ defmodule Swarm.Tracker do
 
       entries when is_list(entries) ->
         Enum.each(entries, fn entry(name: name, meta: old_meta, clock: lclock) ->
-          cond do
-            Clock.leq(lclock, rclock) ->
+          case Clock.compare(lclock, rclock) do
+            :lt ->
               lclock = Clock.join(lclock, rclock)
               Registry.update(name, meta: new_meta, clock: lclock)
 
               debug(
                 "request to update meta from #{inspect(pid)} (#{inspect(new_meta)}) is causally dominated by remote, updated registry..."
               )
-
-            Clock.leq(rclock, lclock) ->
+            :gt ->
               # ignore the request, as the local clock dominates the remote
               debug(
                 "request to update meta from #{inspect(pid)} (#{inspect(new_meta)}) is causally dominated by local, ignoring.."
               )
-
-            :else ->
+            :eq ->
+              # the clocks are the same, no-op
+              debug(
+                "request to update meta from #{inspect(pid)} (#{inspect(new_meta)} has equal clocks, ignoring..."
+              )
+            :concurrent ->
               new_meta = Map.merge(old_meta, new_meta)
 
               # we're going to join and bump our local clock though and re-broadcast the update to ensure we converge
