@@ -1067,7 +1067,7 @@ defmodule Swarm.Tracker do
               debug(
                 "conflicting meta for #{inspect(name)}, updating and notifying other nodes, old meta: #{
                   inspect(old_meta)
-                }, new meta: #{inspect(new_meta)}"
+                }, new meta: #{inspect(new_meta)}, rclock: #{inspect(rclock)}) lclock: #{inspect(lclock)}"
               )
 
               lclock = Clock.join(lclock, rclock)
